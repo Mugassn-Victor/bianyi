@@ -1,0 +1,40 @@
+<Window x:Class="H2LinuxMultiTerminal.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:local="clr-namespace:H2LinuxMultiTerminal"
+ Title="H2 Linux MultiTerminal" Width="1380" Height="900" MinWidth="900" MinHeight="600">
+ <DockPanel Margin="10">
+  <Border DockPanel.Dock="Top" Padding="10" Margin="0,0,0,8" Background="#F2F4F7" CornerRadius="6">
+   <StackPanel>
+    <WrapPanel Margin="0,0,0,8">
+     <TextBlock Text="实例数" VerticalAlignment="Center"/>
+     <ComboBox x:Name="InstanceCount" Width="60" Margin="8,0,12,0" SelectedIndex="3">
+      <ComboBoxItem Content="1"/><ComboBoxItem Content="2"/><ComboBoxItem Content="3"/><ComboBoxItem Content="4"/>
+      <ComboBoxItem Content="5"/><ComboBoxItem Content="6"/><ComboBoxItem Content="7"/><ComboBoxItem Content="8"/>
+     </ComboBox>
+     <Button Content="创建/重建" Click="Build_Click" Padding="12,5" Margin="0,0,8,0"/>
+     <Button Content="全选" Click="SelectAll_Click" Padding="12,5" Margin="0,0,8,0"/>
+     <Button Content="全不选" Click="SelectNone_Click" Padding="12,5" Margin="0,0,8,0"/>
+     <Button Content="刷新选中" Click="Reload_Click" Padding="12,5" Margin="0,0,8,0"/>
+     <Button Content="Ctrl+C" Click="CtrlC_Click" Padding="12,5" Margin="0,0,8,0"/>
+     <Button Content="Ctrl+L" Click="CtrlL_Click" Padding="12,5"/>
+    </WrapPanel>
+    <TextBlock Text="命令（第一版按行发送；每行发送到全部选中终端后再发送下一行）"/>
+    <TextBox x:Name="CommandBox" Height="68" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="14" Text="whoami &amp;&amp; hostname &amp;&amp; uname -a"/>
+    <WrapPanel Margin="0,8,0,0">
+     <TextBlock Text="实例间隔(ms)" VerticalAlignment="Center"/>
+     <TextBox x:Name="InstanceDelayBox" Text="200" Width="65" Margin="6,0,12,0"/>
+     <TextBlock Text="行间隔(ms)" VerticalAlignment="Center"/>
+     <TextBox x:Name="LineDelayBox" Text="500" Width="65" Margin="6,0,12,0"/>
+     <Button x:Name="SendButton" Content="发送到选中终端" Click="Send_Click" Padding="18,6"/>
+     <TextBlock x:Name="StatusText" Margin="14,0,0,0" VerticalAlignment="Center" Text="就绪"/>
+    </WrapPanel>
+   </StackPanel>
+  </Border>
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+   <ItemsControl x:Name="TerminalItems">
+    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+   </ItemsControl>
+  </ScrollViewer>
+ </DockPanel>
+</Window>
