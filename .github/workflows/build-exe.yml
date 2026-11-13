@@ -1,41 +1,81 @@
-name: Build Windows EXE
+name: Build EXE and Put It in Repository Root
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
+    paths:
+      - '**/*.cs'
+      - '**/*.xaml'
+      - '**/*.csproj'
+      - '.github/workflows/build-and-put-exe-in-root.yml'
 
 jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up .NET 8 SDK
+      - name: Install .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: '8.0.x'
 
-      - name: Restore
-        run: dotnet restore .\H2LinuxMultiTerminal.csproj
+      - name: Find project
+        id: project
+        shell: pwsh
+        run: |
+          $project = Get-ChildItem $env:GITHUB_WORKSPACE -Recurse -Filter *.csproj | Select-Object -First 1
+          if (-not $project) { throw 'No .csproj file found.' }
+          "path=$($project.FullName)" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
 
-      - name: Publish single-file EXE
-        run: >-
-          dotnet publish .\H2LinuxMultiTerminal.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -o .\publish
+      - name: Publish Windows EXE
+        shell: pwsh
+        run: |
+          dotnet publish "${{ steps.project.outputs.path }}" `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o "$env:GITHUB_WORKSPACE\publish"
 
-      - name: Upload EXE
+      - name: Copy EXE to repository root
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "$env:GITHUB_WORKSPACE\publish" -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { throw 'No EXE was generated.' }
+          $destination = "$env:GITHUB_WORKSPACE\H2LinuxMultiTerminal.exe"
+          Copy-Item $exe.FullName $destination -Force
+          Write-Host "Copied to repository root: $destination"
+          Write-Host "Size: $([math]::Round((Get-Item $destination).Length / 1MB, 2)) MB"
+
+      - name: Commit EXE to repository root
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add H2LinuxMultiTerminal.exe
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host 'EXE has not changed; nothing to commit.'
+            exit 0
+          }
+          git commit -m "Build H2LinuxMultiTerminal.exe"
+          git push
+
+      - name: Upload backup artifact
         uses: actions/upload-artifact@v4
         with:
           name: H2LinuxMultiTerminal-win-x64
-          path: .\publish\H2LinuxMultiTerminal.exe
+          path: H2LinuxMultiTerminal.exe
           if-no-files-found: error
+          retention-days: 30
